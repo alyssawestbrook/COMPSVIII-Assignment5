@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('../server');
+const app = require('../../server');
 
 describe('Recipe API Tests', () => {
   let server;
@@ -66,10 +66,12 @@ describe('Recipe API Tests', () => {
         cookTime: '' 
       };
 
-      await request(app)
+      const response = await request(app)
         .post('/api/recipes')
         .send(invalidRecipe)
         .expect(400);
+        
+      expect(response.body).toHaveProperty('error', 'All fields are required');
     });
   });
 
@@ -84,9 +86,11 @@ describe('Recipe API Tests', () => {
     });
 
     test('should return 404 for non-existent recipe', async () => {
-      await request(app)
+      const response = await request(app)
         .get('/api/recipes/999')
         .expect(404);
+        
+      expect(response.body).toHaveProperty('error', 'Recipe not found');
     });
   });
 
@@ -108,9 +112,11 @@ describe('Recipe API Tests', () => {
       const recipeId = createResponse.body.id;
 
       // Then delete it
-      await request(app)
+      const deleteResponse = await request(app)
         .delete(`/api/recipes/${recipeId}`)
-        .expect(204);
+        .expect(200);
+
+      expect(deleteResponse.body).toHaveProperty('message', 'Recipe deleted successfully');
 
       // Verify it's deleted
       await request(app)
@@ -119,9 +125,11 @@ describe('Recipe API Tests', () => {
     });
 
     test('should return 404 for deleting non-existent recipe', async () => {
-      await request(app)
+      const response = await request(app)
         .delete('/api/recipes/999')
         .expect(404);
+        
+      expect(response.body).toHaveProperty('error', 'Recipe not found');
     });
   });
 

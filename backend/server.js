@@ -98,3 +98,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Recipe API server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
+
+// Export app for testing
+module.exports = app;
