@@ -6,6 +6,7 @@ recipes.db
 .git
 .gitignore
 README.md
-backend
-test
+backend/
+test/
 *.test.js
+.dockerignore
