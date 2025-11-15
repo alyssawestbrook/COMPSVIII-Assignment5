@@ -86,11 +86,30 @@ jobs:
           --port 5000 \
           --memory 512Mi \
           --cpu 1 \
+          --set-env-vars NODE_ENV=production \
+          --no-use-google-auth || \
+        gcloud run deploy recipe-backend \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }} \
+          --region ${{ secrets.GCP_REGION }} \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 5000 \
+          --memory 512Mi \
+          --cpu 1 \
           --set-env-vars NODE_ENV=production
     
     - name: Deploy frontend to Cloud Run
       if: success()
       run: |
+        gcloud run deploy recipe-frontend \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }} \
+          --region ${{ secrets.GCP_REGION }} \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 80 \
+          --memory 512Mi \
+          --cpu 1 \
+          --no-use-google-auth || \
         gcloud run deploy recipe-frontend \
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }} \
           --region ${{ secrets.GCP_REGION }} \
