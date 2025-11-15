@@ -12,8 +12,8 @@ describe('Recipe API Tests', () => {
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
-      // Database can be empty initially, so just check it's an array
-      expect(response.body.length).toBeGreaterThanOrEqual(0);
+      // INTENTIONALLY BROKEN: This test will fail
+      expect(response.body.length).toBeGreaterThan(999);
     });
 
     test('should return recipes with correct structure', async () => {
