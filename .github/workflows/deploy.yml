@@ -53,71 +53,27 @@ jobs:
     - name: Set up Google Cloud CLI
       if: success()
       uses: google-github-actions/setup-gcloud@v2
-      with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
     
-    - name: Configure Docker for Google Cloud
+    - name: Configure Docker authentication
       if: success()
       run: |
-        # Enable Container Registry API
-        gcloud services enable containerregistry.googleapis.com --quiet
-        
-        # Configure Docker to authenticate with GCR
         gcloud auth configure-docker --quiet
-        
-        # Verify authentication
-        gcloud auth list
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
     
     - name: Build and push backend image
       if: success()
       run: |
         cd backend
-        echo "Building backend Docker image..."
-        
-        # Use GCR (Google Container Registry)
-        IMAGE_URI="gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }}"
-        
-        docker build -t $IMAGE_URI . || {
-          echo "Docker build failed. Showing build context:"
-          ls -la
-          echo "Dockerfile content:"
-          cat Dockerfile
-          exit 1
-        }
-        
-        echo "Pushing backend image to registry..."
-        docker push $IMAGE_URI
-        
-        # Also tag with 'latest' for easier deployment
-        docker tag $IMAGE_URI "gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:latest"
-        docker push "gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:latest"
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }} .
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }}
     
     - name: Build and push frontend image
       if: success()
       run: |
         cd frontend
-        echo "Building frontend Docker image..."
-        
-        # Use GCR (Google Container Registry)
-        IMAGE_URI="gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }}"
-        
-        # Get the backend URL for the frontend build
-        BACKEND_URL=$(gcloud run services describe recipe-backend --region=${{ secrets.GCP_REGION }} --format='value(status.url)' 2>/dev/null || echo "https://recipe-backend-${{ secrets.GCP_PROJECT_ID }}.run.app")
-        
-        docker build --build-arg VITE_API_URL=$BACKEND_URL -t $IMAGE_URI . || {
-          echo "Frontend Docker build failed. Showing build context:"
-          ls -la
-          echo "Dockerfile content:"
-          cat Dockerfile
-          exit 1
-        }
-        
-        echo "Pushing frontend image to registry..."
-        docker push $IMAGE_URI
-        
-        # Also tag with 'latest'
-        docker tag $IMAGE_URI "gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:latest"
-        docker push "gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:latest"
+        BACKEND_URL=https://recipe-backend-${{ secrets.GCP_PROJECT_ID }}.run.app
+        docker build --build-arg VITE_API_URL=$BACKEND_URL -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }} .
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }}
     
     - name: Deploy backend to Cloud Run
       if: success()
