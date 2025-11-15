@@ -1,13 +1,27 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Use /tmp for Cloud Run or current directory for local development
-const dbPath = process.env.NODE_ENV === 'production' 
-  ? '/tmp/recipes.db' 
-  : path.join(__dirname, 'recipes.db');
+// Use /app/data for production (Docker), /tmp for Cloud Run, or current directory for local development
+let dbPath;
+if (process.env.NODE_ENV === 'production') {
+  // For Cloud Run, use /tmp directory which has write permissions
+  dbPath = '/tmp/recipes.db';
+} else if (process.env.NODE_ENV === 'test') {
+  // For tests, use in-memory database
+  dbPath = ':memory:';
+} else {
+  // For local development
+  dbPath = path.join(__dirname, 'recipes.db');
+}
 
 console.log(`Using database path: ${dbPath}`);
-const db = new sqlite3.Database(dbPath);
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Error opening database:', err);
+  } else {
+    console.log('Connected to SQLite database');
+  }
+});
 
 db.serialize(() => {
   db.run(`

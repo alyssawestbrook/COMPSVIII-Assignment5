@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+recipes.db
+*.db
+.env
+.git
+.gitignore
+README.md
+backend
+test
+*.test.js

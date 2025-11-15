@@ -65,7 +65,15 @@ jobs:
       if: success()
       run: |
         cd backend
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }} .
+        echo "Building backend Docker image..."
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }} . || {
+          echo "Docker build failed. Showing build context:"
+          ls -la
+          echo "Dockerfile content:"
+          cat Dockerfile
+          exit 1
+        }
+        echo "Pushing backend image to registry..."
         docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }}
     
     - name: Build and push frontend image
