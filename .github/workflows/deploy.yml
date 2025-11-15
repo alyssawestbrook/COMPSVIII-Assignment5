@@ -59,8 +59,14 @@ jobs:
     - name: Configure Docker for Google Cloud
       if: success()
       run: |
-        gcloud auth configure-docker gcr.io
-        gcloud auth configure-docker us-docker.pkg.dev
+        # Enable Container Registry API
+        gcloud services enable containerregistry.googleapis.com --quiet
+        
+        # Configure Docker to authenticate with GCR
+        gcloud auth configure-docker --quiet
+        
+        # Verify authentication
+        gcloud auth list
     
     - name: Build and push backend image
       if: success()
@@ -68,14 +74,8 @@ jobs:
         cd backend
         echo "Building backend Docker image..."
         
-        # Use Artifact Registry instead of GCR for better reliability
-        IMAGE_URI="us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/recipe-backend:${{ github.sha }}"
-        
-        # Create repository if it doesn't exist
-        gcloud artifacts repositories create recipe-app \
-          --repository-format=docker \
-          --location=us \
-          --description="Recipe app container registry" || echo "Repository may already exist"
+        # Use GCR (Google Container Registry)
+        IMAGE_URI="gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }}"
         
         docker build -t $IMAGE_URI . || {
           echo "Docker build failed. Showing build context:"
@@ -89,8 +89,8 @@ jobs:
         docker push $IMAGE_URI
         
         # Also tag with 'latest' for easier deployment
-        docker tag $IMAGE_URI "us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/recipe-backend:latest"
-        docker push "us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/recipe-backend:latest"
+        docker tag $IMAGE_URI "gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:latest"
+        docker push "gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:latest"
     
     - name: Build and push frontend image
       if: success()
@@ -98,8 +98,8 @@ jobs:
         cd frontend
         echo "Building frontend Docker image..."
         
-        # Use Artifact Registry
-        IMAGE_URI="us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/recipe-frontend:${{ github.sha }}"
+        # Use GCR (Google Container Registry)
+        IMAGE_URI="gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }}"
         
         # Get the backend URL for the frontend build
         BACKEND_URL=$(gcloud run services describe recipe-backend --region=${{ secrets.GCP_REGION }} --format='value(status.url)' 2>/dev/null || echo "https://recipe-backend-${{ secrets.GCP_PROJECT_ID }}.run.app")
@@ -116,14 +116,14 @@ jobs:
         docker push $IMAGE_URI
         
         # Also tag with 'latest'
-        docker tag $IMAGE_URI "us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/recipe-frontend:latest"
-        docker push "us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/recipe-frontend:latest"
+        docker tag $IMAGE_URI "gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:latest"
+        docker push "gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:latest"
     
     - name: Deploy backend to Cloud Run
       if: success()
       run: |
         gcloud run deploy recipe-backend \
-          --image us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/recipe-backend:${{ github.sha }} \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }} \
           --region ${{ secrets.GCP_REGION }} \
           --platform managed \
           --allow-unauthenticated \
@@ -136,7 +136,7 @@ jobs:
       if: success()
       run: |
         gcloud run deploy recipe-frontend \
-          --image us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/recipe-frontend:${{ github.sha }} \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }} \
           --region ${{ secrets.GCP_REGION }} \
           --platform managed \
           --allow-unauthenticated \
