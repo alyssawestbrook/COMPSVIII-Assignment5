@@ -1,7 +1,12 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const dbPath = path.join(__dirname, 'recipes.db');
+// Use /tmp for Cloud Run or current directory for local development
+const dbPath = process.env.NODE_ENV === 'production' 
+  ? '/tmp/recipes.db' 
+  : path.join(__dirname, 'recipes.db');
+
+console.log(`Using database path: ${dbPath}`);
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {

@@ -10,12 +10,14 @@ app.use(express.json());
 
 // Get all recipes
 app.get('/api/recipes', (req, res) => {
+  console.log('Fetching all recipes...');
   db.all("SELECT * FROM recipes ORDER BY created_at DESC", (err, rows) => {
     if (err) {
       console.error('Error fetching recipes:', err);
       res.status(500).json({ error: 'Failed to fetch recipes' });
       return;
     }
+    console.log(`Found ${rows.length} recipes`);
     res.json(rows);
   });
 });
